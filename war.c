@@ -1,7 +1,9 @@
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
+
+#define MAX 5
 
 typedef struct {
     char nome[30];
@@ -9,97 +11,148 @@ typedef struct {
     int tropas;
 } Territorio;
 
+typedef struct {
+    int tipo; // 1 = destruir cor, 2 = conquistar territórios
+    char alvo[10];
+    int quantidade;
+} Missao;
+
 Territorio *territorios;
-int total = 0;
+int total = MAX;
+Missao missao;
+
+// ---------------- FUNÇÕES ----------------
+
+void inicializar() {
+    territorios = (Territorio*) calloc(MAX, sizeof(Territorio));
+
+    strcpy(territorios[0].nome, "Brasil\n");
+    strcpy(territorios[0].cor, "Azul");
+    territorios[0].tropas = 5;
+
+    strcpy(territorios[1].nome, "Japao\n");
+    strcpy(territorios[1].cor, "Verde");
+    territorios[1].tropas = 5;
+
+    strcpy(territorios[2].nome, "EUA\n");
+    strcpy(territorios[2].cor, "Vermelho");
+    territorios[2].tropas = 5;
+
+    strcpy(territorios[3].nome, "Canada\n");
+    strcpy(territorios[3].cor, "Amarelo");
+    territorios[3].tropas = 5;
+
+    strcpy(territorios[4].nome, "China\n");
+    strcpy(territorios[4].cor, "Verde");
+    territorios[4].tropas = 5;
+}
+
+void gerarMissao() {
+    int r = rand() % 2;
+
+    if (r == 0) {
+        missao.tipo = 1;
+        strcpy(missao.alvo, "Verde");
+        printf("Missão: Destruir o exército Verde\n");
+    } else {
+        missao.tipo = 2;
+        missao.quantidade = 3;
+        printf("Missão: Conquistar 3 territórios\n");
+    }
+}
+
+void mostrarMapa() {
+    for (int i = 0; i < total; i++) {
+        printf("\n[%d] %s", i, territorios[i].nome);
+        printf("Cor: %s", territorios[i].cor);
+        printf("Tropas: %d\n", territorios[i].tropas);
+    }
+}
 
 void atacar(int atk, int def) {
     int dadoAtk = rand() % 6 + 1;
     int dadoDef = rand() % 6 + 1;
 
-    printf("\nDado atacante: %d\n", dadoAtk);
-    printf("Dado defensor: %d\n", dadoDef);
+    printf("\nAtk: %d | Def: %d\n", dadoAtk, dadoDef);
 
     if (dadoAtk >= dadoDef) {
         territorios[def].tropas--;
-        printf("Atacante venceu!\n");
 
         if (territorios[def].tropas <= 0) {
-            printf("Território conquistado!\n");
+            printf("Conquistado!\n");
             strcpy(territorios[def].cor, territorios[atk].cor);
             territorios[def].tropas = 1;
         }
     } else {
         territorios[atk].tropas--;
-        printf("Defensor venceu!\n");
     }
 }
+
+int verificarMissao() {
+    if (missao.tipo == 1) {
+        for (int i = 0; i < total; i++) {
+            if (strcmp(territorios[i].cor, missao.alvo) == 0) {
+                return 0;
+            }
+        }
+        return 1;
+    }
+
+    if (missao.tipo == 2) {
+        int count = 0;
+        for (int i = 0; i < total; i++) {
+            if (strcmp(territorios[i].cor, territorios[0].cor) == 0) {
+                count++;
+            }
+        }
+        return count >= missao.quantidade;
+    }
+
+    return 0;
+}
+
+// ---------------- MAIN ----------------
 
 int main() {
     srand(time(NULL));
 
-    territorios = (Territorio*) calloc(5, sizeof(Territorio));
+    inicializar();
+    gerarMissao();
 
-    int option;
+    int op;
 
     do {
-        printf("\nSISTEMA WAR\n");
-        printf("1 - Ver Territórios\n");
-        printf("2 - Adicionar Território\n");
-        printf("3 - Atacar\n");
-        printf("4 - Sair\n");
-        scanf("%d", &option);
+        printf("\n1 - Atacar\n2 - Verificar Missão\n0 - Sair\n");
+        scanf("%d", &op);
 
-        if (option == 1) {
-            for (int i = 0; i < total; i++) {
-                printf("\n[%d]\n", i);
-                printf("Nome: %s", territorios[i].nome);
-                printf("Cor: %s", territorios[i].cor);
-                printf("Tropas: %d\n", territorios[i].tropas);
-            }
-        }
-
-        if (option == 2) {
-            if (total < 5) {
-                getchar();
-
-                printf("Nome: ");
-                fgets(territorios[total].nome, 30, stdin);
-
-                printf("Cor: ");
-                fgets(territorios[total].cor, 10, stdin);
-
-                printf("Tropas: ");
-                scanf("%d", &territorios[total].tropas);
-
-                total++;
-            } else {
-                printf("Limite atingido!\n");
-            }
-        }
-
-        if (option == 3) {
+        if (op == 1) {
             int atk, def;
 
-            printf("\nEscolha o atacante:\n");
-            for (int i = 0; i < total; i++) {
-                printf("[%d] %s", i, territorios[i].nome);
-            }
+            mostrarMapa();
+
+            printf("\nAtacante: ");
             scanf("%d", &atk);
 
-            printf("\nEscolha o defensor:\n");
-            for (int i = 0; i < total; i++) {
-                printf("[%d] %s", i, territorios[i].nome);
-            }
+            printf("Defensor: ");
             scanf("%d", &def);
 
             if (atk != def && atk < total && def < total) {
                 atacar(atk, def);
             } else {
-                printf("Escolha inválida!\n");
+                printf("Inválido!\n");
             }
         }
 
-    } while (option != 4);
+        if (op == 2) {
+            if (verificarMissao()) {
+                printf("MISSÃO COMPLETA!\n");
+                break;
+            } else {
+                printf("Missão ainda não concluída.\n");
+            }
+        }
+
+    } while (op != 0);
 
     free(territorios);
     return 0;
